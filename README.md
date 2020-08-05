@@ -8,7 +8,7 @@
 - [submission PR](https://github.com/PaulDepew/ReactNative)
 
 
-- [GitHub Pages Deployment]()
+- [Expo Deployment](https://expo.io/@pauldepew/no)
 
 
 As a User, I would like a clean UI that is clear and easy to interact with
