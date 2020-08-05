@@ -1,7 +1,7 @@
 'use strict';
 
 const initialState = {
-  character:{},
+  character: {},
   enemy: {},
   losers: [],
   difficulty:0,
@@ -13,11 +13,11 @@ export default (state= initialState, action) => {
 
   switch (type) {
   case 'CREATE':
-    return {...state, character:{...payload}};
+    return {...state, character:payload};
     case 'ENEMY':
-      return {...state, enemy:{...payload}};
+      return {...state, enemy:payload};
     case 'DEFEATED':
-      return {...state, enemy:{}, losers:[...state.losers, payload]};
+      return {...state, losers:[payload]};
     case 'SETDIFFICULTY':
       return {...state, difficulty:payload};
   case 'RESET': 

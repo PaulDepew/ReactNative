@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, {setState, useState} from 'react';
+import React, {setState, useState, useEffect} from 'react';
 import { StyleSheet, Text, View, Button, TextInput, FlatList } from 'react-native';
 import Slider from '@react-native-community/slider';
 import {connect} from 'react-redux';
@@ -9,27 +9,38 @@ import faker from 'faker';
 
 
 const  Player = (props) =>  {
-  console.log(props);
+
+  useEffect(() => {
+    makePlayer(1);
+    makeEnemy(1);
+  }, []);
 
   const roll = (min, max) => {
-    let result = min + Math.floor(Math.random()*(max-min +1))
-    result.crit = '';
+    let result = {
+      roll:0,
+      crit:'',
+    };
+     let number = min + Math.floor(Math.random()*(max-min +1))
+
+     result.roll += number;
 
     if(result === max){
       result.crit = 'crit'
     } else if (result === min){
-      result.crit= 'fail'
+      result.crit = 'fail'
     }
     return result;
   }
 
   const makeEnemy = async (value) => {
-    let name = await faker.name.findName();
-   let type = await faker.lorem.sentence()
-    let img = await faker.image.avatar();
-    let str =  roll(value,100);
-    let def =  roll(value,100);
-    let health =  roll(value,100);
+    let randomPerson = roll( 0, props.contact.length).roll;
+
+    let name = props.contact[randomPerson].name;
+   let type = props.contact[randomPerson].phoneNumbers[0].digits;
+    let img = props.contact[randomPerson].imageAvailable;
+    let str =  roll(value,100).roll;
+    let def =  roll(value,100).roll;
+    let health =  roll(value,100).roll;
 
     let enemy  = {
       name,
@@ -39,95 +50,59 @@ const  Player = (props) =>  {
       def,
       health
     }
-    return props.createEnemy(enemy.data);
+
+    props.createEnemy(enemy);
   }
 
-  const makePlayer = async (playerInfo, value) => {
-    let name = playerInfo.name;
-   let type = playerInfo.type;
-    let img = playerInfo.img;
-    let str =  roll(value,100);
-    let def =  roll(value,100);
-    let health =  roll(value,100);
+  const makePlayer = ( value) => {
+    let str =  roll(value,100).roll;
+    let def =  roll(value,100).roll;
+    let health =  roll(value,100).roll;
 
     let player  = {
-      name,
-      type,
-      img,
       str,
       def,
       health
     }
-    return props.createPlayer(player);
+    props.createPlayer(player);
   }
 
   const fight = ()=> {
     let playerRoll = roll(1, 20);
     let enemyRoll = roll(1, 20);
-    let special = false;
+    // let special = false;
 
     let player = props.character;
     let enemy = props.enemy;
 
-    if(playerRoll >= enemyRoll){
-      switch(playerRoll.crit){
-        case 'crit':
-          special = true
-        return enemy.health = 0;
-        case 'fail':
-          special = true
-          return character.health = 0;
-        default:
-          break;
+   
+
+      if(playerRoll.roll >= enemyRoll.roll) {
+        enemy.health = 0;
       } 
 
-      if(!special){
-        enemy.health -= character.dmg
+      if(playerRoll.roll < enemyRoll.roll){
+        player.health = 0
       }
 
+
+      if(enemy.health === 0){
+      props.defeat(enemy.name);
+      makeEnemy(1)
     }
-
-    if(playerRoll <= enemyRoll){
-      switch(enemyRoll.crit){
-        case 'crit':
-          special = true
-        return character.health = 0;
-        case 'fail':
-          special = true
-          return enemy.health = 0;
-        default:
-          break;
-      } 
-
-      if(!special){
-        character.health -= enemy.dmg
-      }
-
-    }
-
-
-    if(character.health === 0){
-      return 'DEFEATED'
-    }
-
-    if(enemy.health === 0) {
-      props.defeat(enemy)
-      let enemy = {};
-    }
-    
     props.createEnemy(enemy);
     props.createPlayer(player);
-    
   }
 
+  if (props.character.health === 0 ) {
+    return <Button title="You Died :(" onPress={(e)=> {
+      props.reset()}} />;
+  }
 
   return (
     <>
     <View style={styles.container}>
-      <Text>PLAYER CHARACTER</Text>
-      <TextInput placeholder="Name" key='name' value={props.character.name} />
-      <TextInput placeholder="Type" key='type' value={props.character.type} />
-      <TextInput placeholder="img" key='img' value={props.character.img} />
+      <Text>YOUR CHARACTER</Text>
       <Slider style={{width: 200, height: 40}}
               minimumValue={0}
               maximumValue={50}
@@ -136,27 +111,29 @@ const  Player = (props) =>  {
               value={0}
               onSlidingComplete={(value)=> props.setDifficulty(value)}
         />
-      <Button title="Create Character"  onPress={()=> {
+      <Button title="Create Character"  onPress={(e)=> {
         makePlayer(1);
         makeEnemy(1);
         }}/>
       </View>
       <View style={styles.container2}>
-      <Button  title="Fight Enemy" onPress={fight
-        }/>
-      <Button title="RESET" onPress={()=> props.reset()} />
+      <Button  title={`Fight ${props.enemy.name ? props.enemy.name : ''}`} onPress={(e)=> {
+        fight();
+      }}/>
+      
       </View>
-      <View style={styles.container}>
+      {/* <View style={styles.container}>
         <FlatList 
-        data={props.losers}
-        keyExtractor={(enemy) => enemy.name}
-        renderItem={({enemy}) => {
-          return (
-            <Text>{enemy.name}</Text>
-          )
-        }}
-        />
-      </View>
+          data={props.losers ? props.losers : null}
+          keyExtractor={(loser) => loser.type}
+          renderItem={({loser}) => {
+            return (
+            <Text>{loser}</Text>
+            )
+          }}
+          />
+
+      </View> */}
       <StatusBar style="auto" />
     </>
   );
@@ -164,25 +141,21 @@ const  Player = (props) =>  {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex:.6,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: .05,
     width: '100%'
   },
   container2: {
-    flex: 1,
     backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+
   }
 });
 
 const mapStateToProps = state => {
   return {
-    character: state.player.character,
+  character: state.player.character,
   enemy: state.player.enemy,
   losers: state.player.losers,
   difficulty: state.player.difficulty,
